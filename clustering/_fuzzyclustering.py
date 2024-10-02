@@ -53,7 +53,7 @@ class IntuitionisticFuzzyCMeans(BaseEstimator,ClusterMixin):
     
     def fit(self, Z, y=None, **kwargs):
         '''
-        self.Xw :               the array containing the weights of every element in the universe X (defaults to an array of all 1s)
+        self.Xw :               the array containing the weights of every element in the universe X (defaults to an array of 1/len(self.universe))
         self.V :                array of centroids;
         self.universe :         array containing all the elements in the universe X;
                                     for all z in Z, z.items is an improper subest of X
@@ -64,7 +64,7 @@ class IntuitionisticFuzzyCMeans(BaseEstimator,ClusterMixin):
         '''
         self.universe = functools.reduce(np.union1d, (z.items for z in Z))
         Xw = kwargs.get('Xw')
-        self.Xw = np.array(Xw if Xw != None else [1]*len(self.universe))
+        self.Xw = np.array(Xw if Xw != None else [1/len(self.universe)]*len(self.universe))
         self.w = np.zeros((self.n_clusters, Z.size))
         #self.V = np.array([self.weighted_avg_set(i) for i in range(self.n_clusters)])
         self.V = np.random.choice(Z, self.n_clusters)
@@ -74,7 +74,7 @@ class IntuitionisticFuzzyCMeans(BaseEstimator,ClusterMixin):
 
 
     def predict(self, Z):
-        avg_iter_dist = 1
+        avg_iter_dist = self.epsilon+1
         curr_iter = 0
 
         while(avg_iter_dist > self.epsilon and curr_iter < self.iters):
@@ -100,8 +100,7 @@ class IntuitionisticFuzzyCMeans(BaseEstimator,ClusterMixin):
                 in respect to each centroid is computed 
                 '''
                 for i in range(self.n_clusters): 
-                    dist_to_vi = self.distance(Z[j], self.V[i])
-                    powers = np.power(dist_to_vi / dists_to_vr, 2/(self.m-1))
+                    powers = np.power(dists_to_vr[i] / dists_to_vr, 2/(self.m-1))
                     sum = np.sum(powers)
                     self.u[i,j] = 1/sum
         
@@ -314,7 +313,7 @@ class IntuitionisticFuzzyMinimumSpanningTree(BaseEstimator,ClusterMixin):
     def fit(self, A, y=None, **kwargs):
         '''
         self.universe :     array containing all the elements in the universe X
-        self.w :            the array containing the weights of every element in the universe X (defaults to an array of all 1s)
+        self.w :            the array containing the weights of every element in the universe X (defaults to an array of 1/len(self.universe))
         self.n :            the length of the dataset A
         self.E :            the list that contains the edges that connect each node (IFS) with their relative weight (distance)       
         self.T :            the list that will contain the edges of the MST of the graph G = (A,E)
@@ -331,7 +330,7 @@ class IntuitionisticFuzzyMinimumSpanningTree(BaseEstimator,ClusterMixin):
         '''
         self.universe = functools.reduce(np.union1d, (a.items for a in A))
         w = kwargs.get('w')
-        self.w = np.array(w if w != None else [1]*len(self.universe))
+        self.w = np.array(w if w != None else [1/len(self.universe)]*len(self.universe))
         self.n = len(A)
         self.E = []
         self.T = []
@@ -382,9 +381,9 @@ class IntuitionisticFuzzyMinimumSpanningTree(BaseEstimator,ClusterMixin):
         
         #to each node (IFS) assigns the index of its parent set (connected component), which is intepreted as the cluster
         self.sets = np.array(self.sets)
-        self.sets = self.sets - self.sets.min()
+        norm self.sets.min()
         for i in range(self.n):
-            self.assign[i] = self.findset(i)
+            self.assign[i] = self.findset(i)-norm
         
         self.assign = np.array(self.assign)
         uniq = np.unique(self.assign)
@@ -437,7 +436,7 @@ class IntuitionisticFuzzyMinimumSpanningTree(BaseEstimator,ClusterMixin):
 
 
     def findset(self, i):
-        while self.sets[i] == i:
+        if self.sets[i] == i:
             return i
         return self.findset(self.sets[i])
 
