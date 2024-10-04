@@ -179,7 +179,7 @@ class IntuitionisticFuzzyDBSCAN(BaseEstimator,ClusterMixin):
     def fit(self, A, y=None, **kwargs):
         '''
         self.universe : the array containing all the elements in the universe X
-        self.w :        the array containing the weights of every element in the universe X (defaults to an array of all 1s)
+        self.w :        the array containing the weights of every element in the universe X (defaults to an array of all 1/len(self.universe)))
         self.n :        the length of the data set A
         self.C :        the matrix containing the assignment for each data point in the data set A (the columns) to each cluster (the rows)
         self.noise :    an array of length n denoting whether or not the data point at the corresponding index is considered Noise or not
@@ -189,11 +189,12 @@ class IntuitionisticFuzzyDBSCAN(BaseEstimator,ClusterMixin):
         '''
         self.universe = functools.reduce(np.union1d, (a.items for a in A))
         w = kwargs.get('w')
-        self.w = np.array(w if w != None else [1]*len(self.universe))
+        self.w = np.array(w if w != None else [1/len(self.universe)]*len(self.universe))
         self.n = len(A)
         self.C = []
         self.noise = np.array([False]*self.n)
         self.visited = np.array([False]*self.n)
+        self.clustered = np.array([False]*self.n)
         self.intfcore = []
         self.dist = np.zeros((self.n, self.n))
         for i in range(self.n):
@@ -229,14 +230,17 @@ class IntuitionisticFuzzyDBSCAN(BaseEstimator,ClusterMixin):
     def expCluster(self, o, N, A):
         c = [0]*self.n  #instatiate a cluster, at first, no point is assigned to it
         c[o] = 1    #assign the origin point o to the new cluster
+        self.clustered[o] = True
         for i in N: 
             if not self.visited[i]:     #for each non visited point p in N (initially, the inner neighborhood of o)
                 self.visited[i] = True
-                c[i] = 1        #add p to the cluster
                 N1, N2 = self.getNeighbors(i, A)    
                 u, v = self.corePoint(len(N1), len(N2))     
                 if (u-v) >= self.alpha: #check whether p is dense enough
                     N.extend(n for n in N1 if n not in N)   #if it is, extend the cluster to p's neighborhood
+            if not self.clustered[i]
+                self.clustered[i] = True
+                c[i] = 1  #add p to the cluster
         return c
 
 
